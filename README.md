@@ -71,20 +71,54 @@ PYTHONPATH=src python3 -m asrbench run --provider sarvam --languages hi,mr --out
 PYTHONPATH=src python3 -m asrbench run --provider whisper --model small --out results/whisper
 ```
 
-The Sarvam endpoint path, form fields and language-tag format are marked
-`[verify]` in `src/asrbench/providers/sarvam_api.py` and are overridable via
-`SARVAM_API_BASE` / `SARVAM_ASR_PATH` — check them against
-`https://api.sarvam.ai/docs` before trusting a real number. **No key was used
-while building this repo.**
+The endpoint path, form fields and `language_code` tags were verified live
+against `https://api.sarvam.ai/speech-to-text` on 2026-10-03 — 30 requests
+across two runs, all HTTP 200, `hi`/`mr`/`en` tags accepted, model
+`saaras:v3` (`saarika:v2` was retired by the API itself). Base URL and path
+stay overridable via `SARVAM_API_BASE` / `SARVAM_ASR_PATH` in case the API
+moves; re-check `https://api.sarvam.ai/docs`. The key itself is never
+stored in this repo.
+
+## Live results — Sarvam `saaras:v3` on real speech (2026-10-03)
+
+16 bundled real-speech clips (FLEURS Hindi + LibriSpeech English), one live
+run against the platform:
+
+| Language | Dataset | Clips | Words | WER | CER |
+| --- | --- | ---: | ---: | ---: | ---: |
+| hi | FLEURS `hi_in` validation | 6 | 156 | 0.109 | 0.039 |
+| en | LibriSpeech `dev-clean` dummy | 10 | 254 | 0.079 | 0.035 |
+| **all** | | **16** | **410** | **0.090** | **0.037** |
+
+Reproduce with one command (needs a Sarvam key, ~30 seconds):
+
+```bash
+SARVAM_API_KEY=... PYTHONPATH=src python3 -m asrbench run \
+  --manifest data/real/manifest.csv --provider sarvam --out results/live
+```
+
+Read this table as what it is: **an integration measurement, not a
+leaderboard claim** — n = 16, read-speech only, a single run, no confidence
+intervals. Clips are bundled under [`data/real/audio/`](data/real/) with
+provenance and licence (both CC-BY 4.0, fetched 2026-10-03). A separate
+live pass over the 14 placeholder-tone clips went 14/14 (Marathi included):
+tones yield empty hypotheses and WER = 1.0 by construction, which is what a
+no-speech input *should* produce.
 
 ## Getting real data
 
-The bundled 14-utterance sample set (Hindi / Marathi / English across
-read-speech, conversational, code-mixed, broadcast, telephony domains) is
-*illustrative* — its audio files are placeholder tones. For a real benchmark:
+A real manifest is already bundled —
+[`data/real/manifest.csv`](data/real/manifest.csv), 16 clips with
+provenance documented in [`data/real/README.md`](data/real/README.md).
+The 14-utterance sample set (hi/mr/en, 5 domains) stays *placeholder tones*
+on purpose: it proves the harness offline without keys. To build another
+real manifest:
 
-1. Download labelled speech: [Common Voice](https://commonvoice.mozilla.org/)
-   (`hi`, `mr`) or [FLEURS](https://huggingface.co/datasets/google/fleurs).
+1. Download labelled speech: [FLEURS](https://huggingface.co/datasets/google/fleurs)
+   (`hi_in`, `mr_in`) or [Common Voice](https://commonvoice.mozilla.org/)
+   (`hi`, `mr`). Practical note from building this repo: FLEURS's `train`
+   split exceeds the Hugging Face datasets-server 300 MB scan limit — the
+   `hi_in` / `en_in` **validation** splits serve fine.
 2. Export a manifest in the same shape — one row per clip:
    `utt_id,audio_path,language,domain,dataset,reference`
 3. Run the same command with `--manifest /path/to/manifest.csv`.
@@ -110,6 +144,7 @@ dataset-agnostic.
 
 ```text
 data/sample/manifest.csv     14 labelled utterances (hi/mr/en, 5 domains)
+data/real/                   16 real clips (FLEURS hi + LibriSpeech en)
 scripts/make_sample_audio.py placeholder clip generator
 src/asrbench/
   textnorm.py                category-based normalisation
@@ -119,21 +154,27 @@ src/asrbench/
   cli.py                     `python3 -m asrbench {run,report}`
   providers/                 mock · sarvam API · local whisper
 tests/                       55 unittest tests (offline)
-results/                     generated (gitignored)
+results/                     generated (default outputs gitignored;
+                             the two live-run snapshots are committed)
 ```
 
 ## Limits, honestly
 
-- Sample set is 14 utterances of placeholder audio — it proves the *harness*,
-  not model quality.
-- No real API numbers yet (no key was available while building).
+- The bundled 14-clip sample set is placeholder tones — it proves the
+  *harness*, not model quality (its live WER of 1.0 is the expected result
+  for no-speech input, not a measurement).
+- Live numbers exist for **hi/en only** (n = 16, read-speech, single run):
+  Marathi has no openly accessible eval audio yet — FLEURS `mr_in` row
+  groups exceed the datasets-server scan limit and Common Voice downloads
+  are gated. The Marathi path is exercised by the tone run and the mock
+  suite instead.
 - `report` groups by language × domain only; speaker/gender stratification
   would need manifest columns.
-- The Sarvam API request shape is `[verify]`-flagged against live docs.
 
 ## Roadmap
 
-- [ ] Real Common Voice / FLEURS manifests + first genuine Sarvam-vs-Whisper table
+- [ ] Whisper-vs-Sarvam table on the same `data/real` manifest
+- [ ] Marathi real-speech manifest (Common Voice download) + larger n
 - [ ] Confidence intervals (bootstrap) on WER
 - [ ] Code-mixed slice metrics (word-level script detection: Devanagari vs Latin)
 - [ ] Sign-error / latency columns for the platform API

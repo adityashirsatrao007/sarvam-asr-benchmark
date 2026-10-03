@@ -1,0 +1,15 @@
+utt_id,language,domain,dataset,provider,reference,hypothesis,ref_words,ref_chars,word_edits,char_edits
+samp-hi-01,hi,read-speech,sample,sarvam,भारत में कृत्रिम बुद्धिमत्ता के उपयोग तेज़ी से बढ़ रहे हैं।,,11,48,11,48
+samp-hi-02,hi,read-speech,sample,sarvam,सोलापूर के इंजीनियरिंग कॉलेज के विद्यार्थी नए प्रोजेक्ट बना रहे हैं।,,11,57,11,57
+samp-hi-03,hi,code-mixed,sample,sarvam,मुझे Python सीखना है और फिर मैं इसे deploy करूँगा,,10,40,10,40
+samp-hi-04,hi,conversational,sample,sarvam,क्या आप बता सकते हैं कि अगली ट्रेन कब आएगी?,,10,33,10,33
+samp-hi-05,hi,broadcast,sample,sarvam,प्रधानमंत्री ने आज नई योजना की घोषणा की।,,8,32,8,32
+samp-hi-06,hi,telephony,sample,sarvam,हेलो मैं अपना बिल भुगतान करना चाहता हूँ,,8,32,8,32
+samp-mr-01,mr,read-speech,sample,sarvam,सोलापूर शहरातील विद्यार्थ्यांसाठी नवीन तंत्रज्ञान उपलब्ध आहे.,,7,54,7,54
+samp-mr-02,mr,conversational,sample,sarvam,उद्या पुण्यात मुसळधार पाऊस पडण्याची शक्यता आहे.,,7,40,7,40
+samp-mr-03,mr,code-mixed,sample,sarvam,मी git वापरून code share करतो आणि review करतो.,,9,37,9,37
+samp-mr-04,mr,read-speech,sample,sarvam,या प्रकल्पाचे नाव आणि उद्दिष्ट खालीदिलेले आहे.,,7,39,7,39
+samp-en-01,en,read-speech,sample,sarvam,The model reports word error rate for each Indian language.,,10,49,10,49
+samp-en-02,en,broadcast,sample,sarvam,India added record renewable energy capacity this year.,,8,47,8,47
+samp-en-03,en,code-mixed,sample,sarvam,Please data export करो और report भेज दो,,8,32,8,32
+samp-en-04,en,conversational,sample,sarvam,Can you repeat that a little more slowly please,,9,39,9,39

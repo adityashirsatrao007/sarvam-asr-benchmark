@@ -1,0 +1,17 @@
+utt_id,audio_path,language,domain,dataset,reference
+fleurs-hi-00,audio/fleurs-hi-00.wav,hi,read-speech,fleurs-validation,मेजरकेन खाना भूमध्य सागर में समान क्षेत्रों की तरह रोटी सब्जियों और मांस विशेष रूप से सूअर का मांस पर आधारित है और जैतून के तेल का उपयोग करता है।
+fleurs-hi-01,audio/fleurs-hi-01.wav,hi,read-speech,fleurs-validation,वैज्ञानिकों का मानना है कि ओसेलोट्स गंध के द्वारा जानवरों का पीछा करते और खाते शिकार हैं यह सूँघते हुए कि वे ज़मीन पर कहाँ रहे होंगे।
+fleurs-hi-02,audio/fleurs-hi-02.wav,hi,read-speech,fleurs-validation,आर्मंड वर्सास ने कहा मैंने अपनी बहन और उसकी दोस्त को खो दिया और रास्ते में व्हीलचेयर में दो दिव्यांग लोग थे और लोग उनपर उछल रहे थे और उन्हें धक्का दे रहे थे
+fleurs-hi-03,audio/fleurs-hi-03.wav,hi,read-speech,fleurs-validation,कुतूहल गांव में आधे घंटे टहलना समय की हानि नहीं है
+fleurs-hi-04,audio/fleurs-hi-04.wav,hi,read-speech,fleurs-validation,जब घायलों को लड़ाई बंद होने के बाद अस्पताल ले जाया गया तो लगभग 40 अन्य बचे हुए कैदी यार्ड में रुके और अपनी कोठरियों में लौटने से इनकार कर दिया
+fleurs-hi-05,audio/fleurs-hi-05.wav,hi,read-speech,fleurs-validation,पूर्व हाउस स्पीकर न्यूट गिंग्रिच टेक्सास के गर्वनर रिक पैरी और कांग्रेसवुमन मिशेल बैचमैन ने क्रमश चौथा पांचवां और छठा स्थान हासिल किया
+libri-en-00,audio/libri-en-00.wav,en,read-speech,librispeech-dummy,MISTER QUILTER IS THE APOSTLE OF THE MIDDLE CLASSES AND WE ARE GLAD TO WELCOME HIS GOSPEL
+libri-en-01,audio/libri-en-01.wav,en,read-speech,librispeech-dummy,NOR IS MISTER QUILTER'S MANNER LESS INTERESTING THAN HIS MATTER
+libri-en-02,audio/libri-en-02.wav,en,read-speech,librispeech-dummy,HE TELLS US THAT AT THIS FESTIVE SEASON OF THE YEAR WITH CHRISTMAS AND ROAST BEEF LOOMING BEFORE US SIMILES DRAWN FROM EATING AND ITS RESULTS OCCUR MOST READILY TO THE MIND
+libri-en-03,audio/libri-en-03.wav,en,read-speech,librispeech-dummy,HE HAS GRAVE DOUBTS WHETHER SIR FREDERICK LEIGHTON'S WORK IS REALLY GREEK AFTER ALL AND CAN DISCOVER IN IT BUT LITTLE OF ROCKY ITHACA
+libri-en-04,audio/libri-en-04.wav,en,read-speech,librispeech-dummy,LINNELL'S PICTURES ARE A SORT OF UP GUARDS AND AT EM PAINTINGS AND MASON'S EXQUISITE IDYLLS ARE AS NATIONAL AS A JINGO POEM MISTER BIRKET FOSTER'S LANDSCAPES SMILE AT ONE MUCH IN THE SAME WAY THAT MISTER CARKER USED TO FLASH HIS TEETH AND MISTER JOHN COLLIER GIVES HIS SITTER A CHEERFUL SLAP ON THE BACK BEFORE HE SAYS LIKE A SHAMPOOER IN A TURKISH BATH NEXT MAN
+libri-en-05,audio/libri-en-05.wav,en,read-speech,librispeech-dummy,IT IS OBVIOUSLY UNNECESSARY FOR US TO POINT OUT HOW LUMINOUS THESE CRITICISMS ARE HOW DELICATE IN EXPRESSION
+libri-en-06,audio/libri-en-06.wav,en,read-speech,librispeech-dummy,ON THE GENERAL PRINCIPLES OF ART MISTER QUILTER WRITES WITH EQUAL LUCIDITY
+libri-en-07,audio/libri-en-07.wav,en,read-speech,librispeech-dummy,PAINTING HE TELLS US IS OF A DIFFERENT QUALITY TO MATHEMATICS AND FINISH IN ART IS ADDING MORE FACT
+libri-en-08,audio/libri-en-08.wav,en,read-speech,librispeech-dummy,AS FOR ETCHINGS THEY ARE OF TWO KINDS BRITISH AND FOREIGN
+libri-en-09,audio/libri-en-09.wav,en,read-speech,librispeech-dummy,HE LAMENTS MOST BITTERLY THE DIVORCE THAT HAS BEEN MADE BETWEEN DECORATIVE ART AND WHAT WE USUALLY CALL PICTURES MAKES THE CUSTOMARY APPEAL TO THE LAST JUDGMENT AND REMINDS US THAT IN THE GREAT DAYS OF ART MICHAEL ANGELO WAS THE FURNISHING UPHOLSTERER
