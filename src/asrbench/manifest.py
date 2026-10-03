@@ -5,6 +5,11 @@ Optional columns: ``language,domain,dataset`` (default to ``unknown``).
 
 Relative ``audio_path`` values are resolved against the manifest's own
 directory so a manifest stays portable inside its dataset folder.
+
+Loading is strict on purpose: a row that cannot be scored (missing field,
+reference with no text behind it) aborts the run with the offending line
+number, because a dataset that loads "successfully" and then reports a
+silently wrong WER is worse than one that refuses to start.
 """
 
 from __future__ import annotations
@@ -12,6 +17,8 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from pathlib import Path
+
+from .textnorm import normalize
 
 REQUIRED_COLUMNS = ("utt_id", "audio_path", "reference")
 OPTIONAL_DEFAULTS = {"language": "unknown", "domain": "unknown", "dataset": "unknown"}
@@ -26,10 +33,6 @@ class Utterance:
     domain: str = "unknown"
     dataset: str = "unknown"
 
-    @property
-    def audio_exists(self) -> bool:
-        return Path(self.audio_path).exists()
-
 
 class ManifestError(ValueError):
     """Raised when a manifest is missing or malformed."""
@@ -42,7 +45,10 @@ def load_manifest(path: str | Path) -> list[Utterance]:
 
     base_dir = manifest_path.parent
     utterances: list[Utterance] = []
-    with manifest_path.open(newline="", encoding="utf-8") as handle:
+    # utf-8-sig, not utf-8: a manifest exported from a spreadsheet arrives
+    # with a BOM, and the BOM would otherwise glue itself onto "utt_id" and
+    # make every column check fail on a perfectly good file.
+    with manifest_path.open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)
         header = reader.fieldnames or []
         missing = [column for column in REQUIRED_COLUMNS if column not in header]
@@ -56,6 +62,15 @@ def load_manifest(path: str | Path) -> list[Utterance]:
             if not all(values.values()):
                 raise ManifestError(
                     f"{manifest_path}:{line_number} has an empty required field"
+                )
+            # "..." or a lone danda is non-empty but has nothing to align
+            # against: its reference-word count is 0, so any errors it
+            # produces would be divided by zero downstream and reported as a
+            # perfect score. Reject it here, where we still know the row.
+            if not normalize(values["reference"]):
+                raise ManifestError(
+                    f"{manifest_path}:{line_number} reference "
+                    f"{values['reference']!r} contains no scoreable text"
                 )
             audio_path = Path(values["audio_path"])
             if not audio_path.is_absolute():

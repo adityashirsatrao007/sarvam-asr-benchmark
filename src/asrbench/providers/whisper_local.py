@@ -29,6 +29,8 @@ class WhisperProvider(Provider):
     def transcribe(self, utterance: Utterance) -> str:
         language = utterance.language
         kwargs = {}
+        # Only hand Whisper a tag we know it accepts; an unknown manifest
+        # language is left to Whisper's own detection instead of failing.
         if language in SUPPORTED_LANGUAGES:
             kwargs["language"] = language
         try:

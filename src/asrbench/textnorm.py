@@ -9,6 +9,11 @@ detector, so we only do things that are safe for all of them:
 * punctuation/symbols -> space, apostrophes deleted inside words
 * whitespace collapse
 
+Transcripts that carry markup (``<unk>``, ``<spk>``) get no special
+treatment: the brackets are punctuation, so the tag becomes the literal word
+inside it. Nothing in the datasets this harness targets emits such tags, and
+guessing a tag list would risk deleting real words from a transcript.
+
 Crucially we classify by Unicode *category* rather than using a ``\\w``
 regex: Python's ``\\w`` excludes combining marks (category ``Mn``), so a
 regex like ``[^\\w\\s]`` silently destroys Devanagari matras and viramas
@@ -33,19 +38,19 @@ def _replace(character: str) -> str:
     return " " if unicodedata.category(character)[0] in {"P", "S"} else character
 
 
-def normalize(text: str) -> str:
-    """Return the canonical form of *text* used for scoring."""
+def normalize(text: str | None) -> str:
+    """Return the canonical form of *text* used for scoring (``None`` -> "")."""
     text = unicodedata.normalize("NFKC", text or "").casefold()
     text = "".join(_replace(character) for character in text)
     return _WS.sub(" ", text).strip()
 
 
-def word_tokens(text: str) -> list[str]:
+def word_tokens(text: str | None) -> list[str]:
     """Whitespace word tokens of the normalised string."""
     normalised = normalize(text)
     return normalised.split() if normalised else []
 
 
-def char_tokens(text: str) -> list[str]:
+def char_tokens(text: str | None) -> list[str]:
     """Character tokens for CER, with spaces removed (industry practice)."""
     return list(normalize(text).replace(" ", ""))

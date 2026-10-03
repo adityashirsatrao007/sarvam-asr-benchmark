@@ -1,0 +1,24 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Unit tests
+        run: PYTHONPATH=src python3 -m unittest discover -s tests -v
+
+      - name: Generate sample clips
+        run: python3 scripts/make_sample_audio.py
+
+      - name: CLI smoke (mock provider, offline)
+        run: PYTHONPATH=src python3 -m asrbench run --out results --quiet

@@ -2,7 +2,11 @@
 
 We aggregate with the *micro* average (total edits / total reference tokens),
 which is the standard way to report corpus WER; a per-language/domain row and
-an overall row are both emitted.
+an overall row are both emitted. It is deliberately not the mean of the
+per-utterance WERs: that would give a 4-word clip the same vote as a
+400-word one, so a handful of very short utterances could swing the headline
+number. Per-utterance results are therefore stored as *edit counts*, and only
+aggregation turns them into rates.
 """
 
 from __future__ import annotations
@@ -12,7 +16,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .manifest import Utterance
-from .metrics import char_error_rate, edit_distance, word_error_rate
+from .metrics import edit_distance
 from .textnorm import char_tokens, word_tokens
 
 CSV_FIELDS = [
@@ -46,7 +50,12 @@ class UtteranceResult:
 
 
 def score(utterance: Utterance, hypothesis: str, provider: str) -> UtteranceResult:
-    """Turn one (utterance, hypothesis) pair into an auditable result row."""
+    """Turn one (utterance, hypothesis) pair into an auditable result row.
+
+    Stores the raw strings plus edit *counts* — never a per-utterance rate:
+    the denominator only exists once utterances are pooled, and counts let
+    anyone recompute the published WER from ``results.csv`` by hand.
+    """
     ref_words = word_tokens(utterance.reference)
     ref_chars = char_tokens(utterance.reference)
     hyp_words = word_tokens(hypothesis)
@@ -89,7 +98,12 @@ def aggregate(results: list[UtteranceResult]) -> list[AggregateRow]:
         for (language, domain, provider), items in sorted(groups.items())
     ]
     if results:
-        rows.append(_group_to_row("all", "all", results[0].provider, results))
+        # A run produces exactly one provider, but a results.csv that was
+        # concatenated by hand can hold several: label the overall row
+        # "mixed" rather than quietly crediting the first row's provider.
+        providers = {result.provider for result in results}
+        overall_provider = providers.pop() if len(providers) == 1 else "mixed"
+        rows.append(_group_to_row("all", "all", overall_provider, results))
     return rows
 
 
@@ -100,6 +114,10 @@ def _group_to_row(
     chars = sum(item.ref_chars for item in items)
     word_edits = sum(item.word_edits for item in items)
     char_edits = sum(item.char_edits for item in items)
+    # A group with zero reference tokens has no denominator, so the rate is
+    # undefined rather than zero; 0.0 keeps the column numeric and the Words
+    # column shows the group has no scorable text. Normal loading makes this
+    # unreachable — see the reference check in manifest.load_manifest().
     return AggregateRow(
         language=language,
         domain=domain,
@@ -137,27 +155,44 @@ def write_results_csv(results: list[UtteranceResult], path: str | Path) -> Path:
     return destination
 
 
+class ResultsError(ValueError):
+    """Raised when a saved results CSV is missing or malformed."""
+
+
 def read_results_csv(path: str | Path) -> list[UtteranceResult]:
     source = Path(path)
     if not source.exists():
         raise FileNotFoundError(f"results file not found: {source}")
-    with source.open(newline="", encoding="utf-8") as handle:
-        return [
-            UtteranceResult(
-                utt_id=row["utt_id"],
-                language=row["language"],
-                domain=row["domain"],
-                dataset=row["dataset"],
-                provider=row["provider"],
-                reference=row["reference"],
-                hypothesis=row["hypothesis"],
-                ref_words=int(row["ref_words"]),
-                ref_chars=int(row["ref_chars"]),
-                word_edits=int(row["word_edits"]),
-                char_edits=int(row["char_edits"]),
+    with source.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        header = reader.fieldnames or []
+        missing = [column for column in CSV_FIELDS if column not in header]
+        if missing:
+            raise ResultsError(
+                f"{source} is missing column(s): {', '.join(missing)} "
+                "(expected an asrbench results file, e.g. results/results.csv)"
             )
-            for row in csv.DictReader(handle)
-        ]
+        try:
+            return [
+                UtteranceResult(
+                    utt_id=row["utt_id"],
+                    language=row["language"],
+                    domain=row["domain"],
+                    dataset=row["dataset"],
+                    provider=row["provider"],
+                    reference=row["reference"],
+                    hypothesis=row["hypothesis"],
+                    ref_words=int(row["ref_words"]),
+                    ref_chars=int(row["ref_chars"]),
+                    word_edits=int(row["word_edits"]),
+                    char_edits=int(row["char_edits"]),
+                )
+                for row in reader
+            ]
+        except (TypeError, ValueError) as exc:
+            # Short row (None cells) or a count column that is not an int —
+            # report it as a data problem, not a traceback.
+            raise ResultsError(f"{source} has a malformed row: {exc}") from exc
 
 
 def write_report(rows: list[AggregateRow], path: str | Path, *, title: str) -> Path:
@@ -170,13 +205,12 @@ def write_report(rows: list[AggregateRow], path: str | Path, *, title: str) -> P
 # Re-exported for callers that only import ``report``.
 __all__ = [
     "AggregateRow",
+    "ResultsError",
     "UtteranceResult",
     "aggregate",
-    "char_error_rate",
     "read_results_csv",
     "render_markdown",
     "score",
-    "word_error_rate",
     "write_report",
     "write_results_csv",
 ]

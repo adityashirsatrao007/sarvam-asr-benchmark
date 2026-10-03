@@ -4,9 +4,8 @@ import unittest
 from pathlib import Path
 
 from asrbench.cli import main
-from asrbench.manifest import load_manifest
+from asrbench.manifest import Utterance, load_manifest
 from asrbench.report import aggregate, read_results_csv, render_markdown, score
-from asrbench.manifest import Utterance
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = REPO_ROOT / "data" / "sample" / "manifest.csv"
@@ -37,7 +36,12 @@ class CliTests(unittest.TestCase):
             with results_csv.open(newline="", encoding="utf-8") as handle:
                 rows = list(csv.DictReader(handle))
             self.assertEqual(len(rows), len(load_manifest(MANIFEST)))
-            self.assertIn("|", report_md.read_text(encoding="utf-8"))
+            # The exact overall row of the deterministic mock run — the same
+            # numbers the README prints, so the two cannot drift apart.
+            self.assertIn(
+                "| all | all | mock | 14 | 123 | 0.252 | 0.162 |",
+                report_md.read_text(encoding="utf-8"),
+            )
 
     def test_language_filter(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -75,8 +79,25 @@ class CliTests(unittest.TestCase):
                 ),
                 0,
             )
-            exit_code = main(["report", "--results", str(out / "results.csv")])
+            # --out must be given explicitly: the default is the repo's own
+            # results/report.md, which a test suite has no business overwriting.
+            rerendered = out / "rerendered.md"
+            exit_code = main(
+                [
+                    "report",
+                    "--results",
+                    str(out / "results.csv"),
+                    "--out",
+                    str(rerendered),
+                    "--title",
+                    "ASR benchmark — provider: mock",
+                ]
+            )
             self.assertEqual(exit_code, 0)
+            self.assertEqual(
+                rerendered.read_text(encoding="utf-8"),
+                (out / "report.md").read_text(encoding="utf-8"),
+            )
 
     def test_missing_manifest_fails_cleanly(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -101,6 +122,15 @@ class CliTests(unittest.TestCase):
             )
         self.assertEqual(exit_code, 2)
 
+    def test_report_rejects_a_csv_it_did_not_write(self) -> None:
+        # Pointing --results at the manifest is the easy mistake to make;
+        # it must come back as an error message, not a KeyError traceback.
+        with tempfile.TemporaryDirectory() as tmp:
+            exit_code = main(
+                ["report", "--results", str(MANIFEST), "--out", f"{tmp}/report.md"]
+            )
+        self.assertEqual(exit_code, 1)
+
 
 class ReportTests(unittest.TestCase):
     def test_aggregate_includes_overall_row(self) -> None:
@@ -109,6 +139,30 @@ class ReportTests(unittest.TestCase):
         rows = aggregate(results)
         self.assertEqual(rows[-1].language, "all")
         self.assertEqual(rows[-1].utterances, len(utterances))
+
+    def test_micro_average_weights_utterances_by_length(self) -> None:
+        # Hand-computed: a 2-word utterance gets both words wrong (2 edits),
+        # an 8-word one is perfect (0 edits). Micro WER = 2/10 = 0.20; the
+        # mean of per-utterance WERs would be (1.0 + 0.0)/2 = 0.50.
+        def utt(utt_id: str, reference: str) -> Utterance:
+            return Utterance(
+                utt_id=utt_id,
+                audio_path="/x.wav",
+                reference=reference,
+                language="en",
+                domain="read-speech",
+                dataset="unit-test",
+            )
+
+        results = [
+            score(utt("short", "a b"), "x y", "mock"),
+            score(utt("long", "c d e f g h i j"), "c d e f g h i j", "mock"),
+        ]
+        row = aggregate(results)[0]
+        self.assertEqual(row.utterances, 2)
+        self.assertEqual(row.words, 10)
+        self.assertAlmostEqual(row.wer, 0.2)
+        self.assertAlmostEqual(row.cer, 0.2)  # "ab"->"xy" is also 2/10 chars
 
     def test_perfect_hypotheses_score_zero(self) -> None:
         utterance = Utterance(

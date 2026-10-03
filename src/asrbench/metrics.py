@@ -34,13 +34,22 @@ def edit_distance(reference: Sequence[str], hypothesis: Sequence[str]) -> int:
 
 
 def _error_rate(ref_tokens: list[str], hyp_tokens: list[str]) -> float:
+    # No reference tokens means no denominator: the rate is undefined. Cap it
+    # at 1.0 rather than raising or returning inf, so one blank gold
+    # transcript cannot poison an average. Corpus numbers never come from
+    # this function (report.aggregate pools edit counts), and load_manifest()
+    # rejects references that normalise to nothing before they can be scored.
     if not ref_tokens:
         return 0.0 if not hyp_tokens else 1.0
     return edit_distance(ref_tokens, hyp_tokens) / len(ref_tokens)
 
 
 def word_error_rate(reference: str, hypothesis: str) -> float:
-    """WER for a single utterance."""
+    """Single-utterance WER over normalised word tokens.
+
+    Corpus numbers are *not* the mean of these values: see ``report.aggregate``
+    for the micro-average that is actually reported.
+    """
     return _error_rate(word_tokens(reference), word_tokens(hypothesis))
 
 

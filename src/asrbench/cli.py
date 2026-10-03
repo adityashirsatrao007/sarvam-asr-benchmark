@@ -9,6 +9,7 @@ from pathlib import Path
 from .manifest import ManifestError, load_manifest
 from .providers import ProviderError, create_provider
 from .report import (
+    ResultsError,
     aggregate,
     read_results_csv,
     render_markdown,
@@ -117,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "run":
             return _cmd_run(args)
         return _cmd_report(args)
-    except (ManifestError, ProviderError, FileNotFoundError) as exc:
+    except (ManifestError, ResultsError, ProviderError, FileNotFoundError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 

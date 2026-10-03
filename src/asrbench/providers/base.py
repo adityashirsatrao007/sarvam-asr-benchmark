@@ -18,7 +18,12 @@ class Provider(ABC):
 
     @abstractmethod
     def transcribe(self, utterance: Utterance) -> str:
-        """Return the hypothesis text for *utterance*."""
+        """Return the hypothesis text for *utterance*.
+
+        Implementations raise ``ProviderError`` when the text cannot be
+        produced (bad key, missing file, API failure) — never a partial or
+        invented transcript, which would be scored as if it were real.
+        """
 
     def close(self) -> None:  # pragma: no cover - trivial default
         """Release any resources (HTTP sessions, model handles)."""

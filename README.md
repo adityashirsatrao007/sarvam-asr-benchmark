@@ -17,7 +17,7 @@ reporting already in place.
 
 ```bash
 python3 scripts/make_sample_audio.py      # placeholder clips for the sample set
-PYTHONPATH=src python3 -m unittest discover -s tests -v   # 39 tests
+PYTHONPATH=src python3 -m unittest discover -s tests -v   # 55 tests
 PYTHONPATH=src python3 -m asrbench run --out results --quiet
 ```
 
@@ -59,7 +59,7 @@ wrote results/report.md
 | `--provider` | What it does | Requirements |
 | --- | --- | --- |
 | `mock` (default) | Seeded, deterministic transcript corruption — pipeline check | nothing (stdlib only) |
-| `sarvam` | Sarvam AI platform ASR (`saarika` model) | `SARVAM_API_KEY` + `pip install requests` |
+| `sarvam` | Sarvam AI platform ASR (`saaras:v3`) | `SARVAM_API_KEY` + `pip install requests` |
 | `whisper` | Local `faster-whisper` baseline for comparison | `pip install faster-whisper` |
 
 ```bash
@@ -118,7 +118,7 @@ src/asrbench/
   report.py                  micro-aggregation, CSV + markdown reports
   cli.py                     `python3 -m asrbench {run,report}`
   providers/                 mock · sarvam API · local whisper
-tests/                       39 unittest tests (offline)
+tests/                       55 unittest tests (offline)
 results/                     generated (gitignored)
 ```
 

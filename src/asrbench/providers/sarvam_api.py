@@ -1,11 +1,14 @@
 """Sarvam AI platform ASR provider (network mode).
 
-Requires ``SARVAM_API_KEY`` (see ``.env.example``) and ``pip install requests``.
+Requires ``SARVAM_API_KEY`` — read from the environment or from a local
+``.env`` (see ``.env.example``) — and ``pip install requests``.
 
-.. warning::
-   The endpoint path, form field names and response shape below are written
-   from the public Sarvam API surface and are marked ``[verify]``. Check them
-   against https://api.sarvam.ai/docs before trusting real numbers — they are
+.. note::
+   Live-checked against https://api.sarvam.ai on 2026-10-03: endpoint path,
+   ``api-subscription-key`` auth, the ``model``/``language_code`` form fields
+   and the response's ``transcript`` key were all exercised for real (the API
+   itself rejected the retired ``saarika:v2`` naming and named ``saaras:v3``).
+   Language tags other than ``hi-IN`` remain ``[verify]``. Everything stays
    overridable via ``SARVAM_API_BASE`` / ``SARVAM_ASR_PATH`` without code
    changes.
 """
@@ -19,13 +22,33 @@ from typing import Any
 from ..manifest import Utterance
 from .base import Provider, ProviderError
 
-# [verify] exact endpoint + field names against the live API docs.
+# Live-verified 2026-10-03 (path, auth header, form fields, model id).
 DEFAULT_BASE_URL = "https://api.sarvam.ai"
 DEFAULT_ASR_PATH = "/speech-to-text"
-DEFAULT_MODEL = "saarika:v2"
+DEFAULT_MODEL = "saaras:v3"
 
 # [verify] language tag format (bare "hi" vs "hi-IN").
 _LANGUAGE_TAGS = {"hi": "hi-IN", "mr": "mr-IN", "en": "en-IN", "ta": "ta-IN"}
+
+
+def _load_dotenv(path: Path) -> None:
+    """Fill *unset* ``os.environ`` entries from a local ``KEY=VALUE`` file.
+
+    The repo ships ``.env.example`` and tells people to ``cp`` it to ``.env``,
+    so that file has to actually be read — stdlib only, because a zero
+    dependency core is a stated requirement. Variables already present in the
+    environment keep their value, so an explicit ``export`` still wins.
+    """
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if key and key not in os.environ:
+            os.environ[key] = value.strip().strip("'\"")
 
 
 def _extract_transcript(payload: Any) -> str:
@@ -34,10 +57,18 @@ def _extract_transcript(payload: Any) -> str:
         return payload.strip()
     if not isinstance(payload, dict):
         raise ProviderError(f"unexpected ASR response type: {type(payload).__name__}")
+    seen_empty = False
     for key in ("transcript", "text", "output", "result"):
         value = payload.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
+        if isinstance(value, str):
+            if value.strip():
+                return value.strip()
+            seen_empty = True
+    if seen_empty:
+        # A present-but-empty transcript is a real answer: the model heard no
+        # speech (silence, a pure tone). That is an empty hypothesis for WER
+        # to score, not a malformed response. Live-confirmed 2026-10-03.
+        return ""
     # One level of nesting, e.g. {"results": {"transcript": "..."}}
     for value in payload.values():
         if isinstance(value, dict):
@@ -45,7 +76,9 @@ def _extract_transcript(payload: Any) -> str:
                 return _extract_transcript(value)
             except ProviderError:
                 continue
-    raise ProviderError(f"no transcript field found in response: {payload!r}")
+    # Truncated: a failed response can be a whole HTML error page, and an
+    # exception message is not the place to dump it.
+    raise ProviderError(f"no transcript field found in response: {repr(payload)[:300]}")
 
 
 class SarvamASRProvider(Provider):
@@ -60,6 +93,7 @@ class SarvamASRProvider(Provider):
         model: str | None = None,
         timeout: float = 60.0,
     ) -> None:
+        _load_dotenv(Path(".env"))
         self.api_key = api_key or os.environ.get("SARVAM_API_KEY", "").strip()
         if not self.api_key:
             raise ProviderError(
@@ -67,14 +101,12 @@ class SarvamASRProvider(Provider):
                 "in, or run with --provider mock for an offline pipeline check."
             )
         try:
-            import requests  # noqa: F401 - optional dependency
+            import requests  # optional dependency: only this provider needs it
         except ImportError as exc:  # pragma: no cover - env dependent
             raise ProviderError(
                 "the 'requests' package is required for --provider sarvam: "
                 "pip install requests"
             ) from exc
-
-        import requests
 
         self._http = requests
         self.base_url = (base_url or os.environ.get("SARVAM_API_BASE") or DEFAULT_BASE_URL).rstrip("/")
@@ -111,4 +143,13 @@ class SarvamASRProvider(Provider):
                 f"ASR request returned HTTP {response.status_code}: "
                 f"{response.text[:300]}"
             )
-        return _extract_transcript(response.json())
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            # 200 with a non-JSON body (proxy/gateway page) — the same class
+            # of failure _extract_transcript already handles, so it should
+            # surface as a ProviderError, not a traceback.
+            raise ProviderError(
+                f"ASR response was not valid JSON: {response.text[:300]}"
+            ) from exc
+        return _extract_transcript(payload)

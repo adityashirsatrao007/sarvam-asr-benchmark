@@ -26,6 +26,8 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual(normalize("１２３"), "123")
 
     def test_none_is_empty(self) -> None:
+        # Providers and CSV cells can hand us None; scoring must not explode.
+        self.assertEqual(normalize(None), "")
         self.assertEqual(normalize(""), "")
 
     def test_word_tokens(self) -> None:

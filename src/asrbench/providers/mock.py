@@ -55,6 +55,9 @@ class MockProvider(Provider):
         self.seed = seed
 
     def transcribe(self, utterance: Utterance) -> str:
+        # Reseed per utterance, not per run: the hypothesis then depends only
+        # on (seed, utt_id), so adding, dropping or reordering manifest rows
+        # (--languages, --limit) never changes any *other* row's output.
         rng = random.Random(f"{self.seed}:{utterance.utt_id}")
         tokens: list[str] = []
         for token in utterance.reference.split():
