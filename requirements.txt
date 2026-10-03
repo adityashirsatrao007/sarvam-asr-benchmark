@@ -1,0 +1,8 @@
+# Core: none. The default (mock) pipeline runs on the Python 3.10+ stdlib.
+#
+# Optional providers — install only what you use:
+# requests>=2.31          # --provider sarvam
+# faster-whisper>=1.0     # --provider whisper
+#
+# Dev:
+# pytest>=7               # optional; tests also run under plain unittest

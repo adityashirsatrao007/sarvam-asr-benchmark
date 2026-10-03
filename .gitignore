@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Secrets — never commit API keys
+.env
+*.key
+
+# Benchmark outputs (regenerate with `python3 -m asrbench run`)
+results/*.csv
+results/*.md
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
