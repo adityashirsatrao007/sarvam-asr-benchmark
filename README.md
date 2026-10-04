@@ -90,6 +90,8 @@ run against the platform:
 | en | LibriSpeech `dev-clean` dummy | 10 | 254 | 0.079 | 0.035 |
 | **all** | | **16** | **410** | **0.090** | **0.037** |
 
+![Word and character error rate by language: English 0.079 and 0.035, Hindi 0.109 and 0.039](figures/wer-by-language.png)
+
 Reproduce with one command (needs a Sarvam key, ~30 seconds):
 
 ```bash
